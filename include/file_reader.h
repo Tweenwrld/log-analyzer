@@ -2,11 +2,12 @@
 #define FILE_READER_H
  
 #include <stdio.h>
+#include "parse.h"
 #define BUFFER_SIZE 4096
 
 typedef struct {
 	FILE *file;
-	char buffer[BUFFER_SIZE]
+	char buffer[BUFFER_SIZE];
 } FILEREADER;
 
 FILEREADER* open_file(const char *filename);
