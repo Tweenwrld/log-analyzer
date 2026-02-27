@@ -10,8 +10,8 @@ typedef struct {
 	char buffer[BUFFER_SIZE];
 } FILEREADER;
 
-FILEREADER* open_file(const char *filename);
-char* read_line(FILEREADER *reader, char *line, size_t max_len);
-void close_file(FILEREADER *reader);
+FileReader* open_file(const char *filename);
+char* read_line(FileReader *reader, char *line, size_t max_len);
+void close_file(FileReader *reader);
 
 #endif
