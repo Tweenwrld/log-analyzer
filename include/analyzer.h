@@ -31,4 +31,3 @@ void cleanup_analyzer(AnalysisResult *result);
 
 
 #endif
-
