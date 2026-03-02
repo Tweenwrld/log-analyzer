@@ -6,7 +6,7 @@
 
 typedef struct {
 	FILE *file;
-	char buffer[BUFFER_SIZE]
+	char buffer[BUFFER_SIZE];
 } FileReader;
 
 FileReader* open_file(const char *filename);
