@@ -10,7 +10,7 @@ int parse_log_line(const char *line, LogEntry *entry){
 	if (strlen(line) < 20) return -1;
 
 	strncpy(entry->timestamp, line, 19);
-	entry->timestamp[19] = "\0";
+	entry->timestamp[19] = '\0';
 
 	const char *level_start = line + 20;
 

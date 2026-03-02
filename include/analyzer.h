@@ -2,25 +2,31 @@
 #define ANALYZER_H
 
 #include "parse.h"
-#define MAX_ERROR_MESSAGE 10000
 
 typedef struct {
 	char message[MAX_MESSAGE_LEN];
 	int count;
-} ErrorEntry;
+} LogEntryCount;
+
+typedef LogEntryCount ErrorEntry;
 
 typedef struct {
-	int total_line; // Processed 1,234,434 lines;
+	int total_lines;
 	int info_count;
 	int warn_count;
 	int error_count;
-	ErrorEntry *error_entries;
-	int error_count_unique; // Disk fulll* appears 500 times -> unique count = 1
+	int error_count_unique;
+	int warn_count_unique;
+	LogEntryCount *error_entries;
+	LogEntryCount *warn_entries;
 	int error_capacity;
+	int warn_capacity;
 } AnalysisResult;
 
-AnalysisResult* init_analyzer(); // AnalysisResult *result = init_analyzer();
-void process_log_lines(const AnalysisResult *result, int top_n, ErrorEntry *top_errors);
+AnalysisResult* init_analyzer();
+void process_log_line(AnalysisResult *result, const LogEntry *entry);
+void get_top_errors(const AnalysisResult *result, int top_n, ErrorEntry *top_errors);
+void get_top_warnings(const AnalysisResult *result, int top_n, LogEntryCount *top_warnings);
 void cleanup_analyzer(AnalysisResult *result);
 
 

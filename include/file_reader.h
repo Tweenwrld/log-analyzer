@@ -8,7 +8,7 @@
 typedef struct {
 	FILE *file;
 	char buffer[BUFFER_SIZE];
-} FILEREADER;
+} FileReader;
 
 FileReader* open_file(const char *filename);
 char* read_line(FileReader *reader, char *line, size_t max_len);

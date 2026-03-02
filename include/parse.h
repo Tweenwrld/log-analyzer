@@ -9,12 +9,12 @@
 #define LOG_LEVEL_UNKNOWN -1
 
 typedef struct {
-	char timestamp[20]; // "2025-01-01 12:30:25"
-	int level; // error, warn, info
-	char message[MAX_MESSAGE_LEN]; // "Database coneection failed"
+	char timestamp[20];
+	int level;
+	char message[MAX_MESSAGE_LEN];
 }LogEntry;
 
-int parse_log_line(const char *line, LogEntry *entry); // "2025-01-01 12:30:24"
+int parse_log_line(const char *line, LogEntry *entry);
 
 
 #endif

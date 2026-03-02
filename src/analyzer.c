@@ -8,14 +8,24 @@ AnalysisResult* init_analyzer(){
 	AnalysisResult *result = malloc(sizeof(AnalysisResult));
 	if(!result) return NULL;
 
-	result->total_line = 0;
+	result->total_lines = 0;
 	result->info_count = 0;
+	result->error_count = 0;
 	result->warn_count = 0;
 	result->error_count_unique = 0;
+	result->warn_count_unique = 0;
 	result->error_capacity = 100;
+	result->warn_capacity = 100;
 
-	result->error_entries = calloc(result->error_capacity, sizeof(ErrorEntry));
+	result->error_entries = calloc(result->error_capacity, sizeof(LogEntryCount));
 	if(!result->error_entries){
+		free(result);
+		return NULL;
+	}
+
+	result->warn_entries = calloc(result->warn_capacity, sizeof(LogEntryCount));
+	if(!result->warn_entries){
+		free(result->error_entries);
 		free(result);
 		return NULL;
 	}
@@ -23,34 +33,39 @@ AnalysisResult* init_analyzer(){
 	return result;
 }
 
-static void add_error_message(AnalysisResult *result, const char *message){
-	for (int i = 0; i < result->error_count_unique; i++){
-		if(strcmp(result->error_entries[i].message, message) == 0){
-			result->error_entries[i].count++;
+static void add_message(LogEntryCount **entries, int *unique_count, int *capacity, const char *message){
+	for (int i = 0; i < *unique_count; i++){
+		if(strcmp((*entries)[i].message, message) == 0){
+			(*entries)[i].count++;
 			return;
 		}
 	}
 
-	if(result->error_count_unique >= result->error_capacity){
-		int new_capacity = result->error_capacity * 2;
-		ErrorEntry * new_entries = realloc(result->error_entries, new_capacity * sizeof(ErrorEntry));
+	if(*unique_count >= *capacity){
+		int new_capacity = (*capacity) * 2;
+		LogEntryCount * new_entries = realloc(*entries, new_capacity * sizeof(LogEntryCount));
 		if(!new_entries) return;
 
-		result->error_entries = new_entries;
-		result->error_capacity = new_capacity;
+		*entries = new_entries;
+		*capacity = new_capacity;
 	}
 
-	snprintf(result->error_entries[result->error_count_unique].message, MAX_MESSAGE_LEN, "%s", message);
+	snprintf((*entries)[*unique_count].message, MAX_MESSAGE_LEN, "%s", message);
 
-	result->error_entries[result->error_count_unique].count = 1;
-	result->error_count_unique++;
+	(*entries)[*unique_count].count = 1;
+	(*unique_count)++;
+}
 
+static void add_error_message(AnalysisResult *result, const char *message){
+	add_message(&result->error_entries, &result->error_count_unique, &result->error_capacity, message);
+}
+
+static void add_warn_message(AnalysisResult *result, const char *message){
+	add_message(&result->warn_entries, &result->warn_count_unique, &result->warn_capacity, message);
 }
 
 void process_log_line(AnalysisResult *result, const LogEntry *entry){
 	if(!result || !entry) return;
-
-	result->total_line++;
 
 	switch(entry->level){
 		case LOG_LEVEL_INFO:
@@ -58,6 +73,7 @@ void process_log_line(AnalysisResult *result, const LogEntry *entry){
 			break;
 		case LOG_LEVEL_WARN:
 			result->warn_count++;
+			add_warn_message(result, entry->message);
 			break;
 		case LOG_LEVEL_ERROR:
 			result->error_count++;
@@ -66,41 +82,50 @@ void process_log_line(AnalysisResult *result, const LogEntry *entry){
 	}
 }
 
+static void get_top_entries(const LogEntryCount *entries, int unique_count, int top_n, LogEntryCount *top_entries){
+	if (!entries || !top_entries || unique_count <= 0 || top_n <= 0) return;
 
-void get_top_errors(const AnalysisResult *result, int top_n, ErrorEntry *top_errors){
-
-	int n = result->error_count_unique < top_n ? result->error_count_unique : top_n;
-
-	// create a copy to avoid modifying original
-	ErrorEntry *temp = malloc(result->error_count_unique * sizeof(ErrorEntry));
+	int n = unique_count < top_n ? unique_count : top_n;
+	LogEntryCount *temp = malloc(unique_count * sizeof(LogEntryCount));
 	if (!temp) return;
 
-	memcpy(temp, result->error_entries, result->error_count_unique *sizeof(ErrorEntry));
+	memcpy(temp, entries, unique_count * sizeof(LogEntryCount));
 
-	// selection sort (descending by count)
 	for(int i = 0; i < n; i++) {
 		int max_idx = i;
-		for (int j = i + 1; j < result->error_count_unique; j ++) {
+		for (int j = i + 1; j < unique_count; j ++) {
 			if (temp[j].count > temp[max_idx].count){
-				max_idx * j;
+				max_idx = j;
 			}
 		}
 
-		//swap
-		ErrorEntry swap = temp[i];
+		LogEntryCount swap = temp[i];
 		temp[i] = temp[max_idx];
 		temp[max_idx] = swap;
 	}
 
-	//copy top N
-	memcpy(top_errors, temp, n * sizeof(ErrorEntry));
+	memcpy(top_entries, temp, n * sizeof(LogEntryCount));
 	free(temp);
+}
+
+
+void get_top_errors(const AnalysisResult *result, int top_n, ErrorEntry *top_errors){
+	if (!result || !top_errors) return;
+	get_top_entries(result->error_entries, result->error_count_unique, top_n, top_errors);
+}
+
+void get_top_warnings(const AnalysisResult *result, int top_n, LogEntryCount *top_warnings){
+	if (!result || !top_warnings) return;
+	get_top_entries(result->warn_entries, result->warn_count_unique, top_n, top_warnings);
 }
 
 void cleanup_analyzer(AnalysisResult *result){
 	if(result) {
 		if(result->error_entries){
 			free(result->error_entries);
+		}
+		if(result->warn_entries){
+			free(result->warn_entries);
 		}
 		free(result);
 	}
